@@ -37,7 +37,7 @@ struct Match {
 	string percent2;
 	string numIdentical;
 
-	string hasStudent(Student &s) {
+	string hasStudent(const Student &s) {
 		if (student1 == s.student)
 			return student2;
 		else if (student2 == s.student)
@@ -52,7 +52,7 @@ bool sort_numIdentical(Match a, Match b) {
 	return a.numIdentical < b.numIdentical;
 }
 
-vector<Match> getStudentMatches(vector<Match> matches, Student &studentObj) {
+vector<Match> getStudentMatches(vector<Match> matches, const Student &studentObj) {
 	vector<Match> studentMatches;
 	for (vector<Match>::iterator match_it = matches.begin(); match_it != matches.end(); match_it++) {
 		if (match_it->hasStudent(studentObj) != "") //student exists, add match to collection
@@ -64,7 +64,7 @@ vector<Match> getStudentMatches(vector<Match> matches, Student &studentObj) {
 }
 
 
-void genPage(vector<Match> &matches, vector< vector<Student> > &groups) {
+void genPage(vector<Match> matches, vector< vector<Student> > groups) {
 	ofstream page;
 	page.open(PAGERESULTS);
 	if (!page.is_open()) {
@@ -95,7 +95,8 @@ void genPage(vector<Match> &matches, vector< vector<Student> > &groups) {
 
 int main(int argc, char **argv)
 {
-	system("./parseMoss.sh");
+	//parse through moss results, delimit info by tabs
+	system("./parseMoss.sh"); 
 	ifstream mossresults;
 	mossresults.open(MOSSRESULTS);
 	if (!mossresults.is_open()) {
@@ -103,8 +104,8 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	vector<Match> matches;
-	vector<Student> students;
+	vector<Match> matches; //matches collection
+	vector<Student> students; //collection of all students
 	string line;
 	while (getline(mossresults, line)) {
 		Match match;
@@ -118,10 +119,12 @@ int main(int argc, char **argv)
 		Student s1(match.student1, false);
 		Student s2(match.student2, false);
 
+		//insert into student vector if new student
 		vector<Student>::iterator s_it1 = find(students.begin(), students.end(), s1);
 		if (s_it1 == students.end())
 			students.push_back(s1);
 
+		//insert into student vector if new student
 		vector<Student>::iterator s_it2 = find(students.begin(), students.end(), s2);
 		if (s_it2 == students.end())
 			students.push_back(s2);
@@ -131,11 +134,20 @@ int main(int argc, char **argv)
 
 	mossresults.close();
 	
-	queue<Student> q; // Queue of students that are in a group
+	queue<Student> q; // Queue of students that are placed into a group
 	vector< vector <Student> > groups;
 	vector<Student> curGroup;
+
+	/*Process:
+	 * Start with a new (unqueued) student. This will be the first student
+	 * in the current group. Find all students that have a match pair with
+	 * this student based on MOSS results. For each student paired, add that 
+	 * student to the current group and enqueue the student if not 
+	 * already enqueued. Once the queue is empty, all the students 
+	 * in the current group are related based on Moss results.*/
+
 	for (vector<Student>::iterator student_it = students.begin(); student_it != students.end(); student_it++) {
-		if (student_it->queued)
+		if (student_it->queued) //student already in queue or grouped 
 			continue;
 
 		student_it->queued = true;
